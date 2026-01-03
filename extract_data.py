@@ -1,120 +1,134 @@
 import requests
 import pandas as pd
-import json
 from datetime import datetime
 
-# Your EIA API key - REPLACE THIS with your actual key
-API_KEY = "your_api_key_here"
+# Your EIA API key
+API_KEY = "amUwiz089HSfLRFiM2PKGCknDOAbeJpqkAwdIh0f"
 
-def get_crude_oil_production(state="USA", start_year=2018):
+def get_petroleum_data():
     """
-    Fetch crude oil production data from EIA API
-    
-    Parameters:
-    - state: State code (e.g., 'TX' for Texas, 'USA' for total US)
-    - start_year: Starting year for data retrieval
+    Fetch US petroleum production data from EIA API
+    This gets total US crude oil production
     """
     
-    # EIA API endpoint for crude oil production
-    base_url = "https://api.eia.gov/v2/petroleum/crd/crpdn/data/"
+    # API endpoint for petroleum production
+    url = "https://api.eia.gov/v2/petroleum/crd/crpdn/data/"
     
     params = {
         "api_key": API_KEY,
         "frequency": "monthly",
         "data[0]": "value",
-        "facets[duoarea][]": state,
+        "start": "2018-01",
         "sort[0][column]": "period",
         "sort[0][direction]": "desc",
-        "offset": 0,
         "length": 5000
     }
     
     try:
-        print(f"Fetching crude oil production data for {state}...")
-        response = requests.get(base_url, params=params)
-        response.raise_for_status()
+        print("Fetching US crude oil production data...")
+        response = requests.get(url, params=params)
         
-        data = response.json()
+        print(f"Status Code: {response.status_code}")
         
-        if 'response' in data and 'data' in data['response']:
-            df = pd.DataFrame(data['response']['data'])
-            print(f"Successfully retrieved {len(df)} records")
-            return df
+        if response.status_code == 200:
+            data = response.json()
+            
+            if 'response' in data and 'data' in data['response']:
+                records = data['response']['data']
+                df = pd.DataFrame(records)
+                print(f"Successfully retrieved {len(df)} records")
+                return df
+            else:
+                print("Response structure:", data.keys() if isinstance(data, dict) else type(data))
+                return None
         else:
-            print("No data found in response")
+            print(f"Error: {response.status_code}")
+            print(f"Response: {response.text[:500]}")
             return None
             
-    except requests.exceptions.RequestException as e:
+    except Exception as e:
         print(f"Error fetching data: {e}")
         return None
 
-def get_natural_gas_production(state="USA", start_year=2018):
+def get_natural_gas_data():
     """
-    Fetch natural gas production data from EIA API
+    Fetch US natural gas production data from EIA API
     """
     
-    base_url = "https://api.eia.gov/v2/natural-gas/prod/sum/data/"
+    url = "https://api.eia.gov/v2/natural-gas/prod/sum/data/"
     
     params = {
         "api_key": API_KEY,
         "frequency": "monthly",
         "data[0]": "value",
-        "facets[process][]": "PGP",  # Gross withdrawals
-        "facets[area][]": state,
+        "start": "2018-01",
         "sort[0][column]": "period",
         "sort[0][direction]": "desc",
-        "offset": 0,
         "length": 5000
     }
     
     try:
-        print(f"Fetching natural gas production data for {state}...")
-        response = requests.get(base_url, params=params)
-        response.raise_for_status()
+        print("\nFetching US natural gas production data...")
+        response = requests.get(url, params=params)
         
-        data = response.json()
+        print(f"Status Code: {response.status_code}")
         
-        if 'response' in data and 'data' in data['response']:
-            df = pd.DataFrame(data['response']['data'])
-            print(f"Successfully retrieved {len(df)} records")
-            return df
+        if response.status_code == 200:
+            data = response.json()
+            
+            if 'response' in data and 'data' in data['response']:
+                records = data['response']['data']
+                df = pd.DataFrame(records)
+                print(f"Successfully retrieved {len(df)} records")
+                return df
+            else:
+                print("Response structure:", data.keys() if isinstance(data, dict) else type(data))
+                return None
         else:
-            print("No data found in response")
+            print(f"Error: {response.status_code}")
+            print(f"Response: {response.text[:500]}")
             return None
             
-    except requests.exceptions.RequestException as e:
+    except Exception as e:
         print(f"Error fetching data: {e}")
         return None
+
+def explore_data(df, name):
+    """Quick exploration of the dataframe"""
+    if df is not None and not df.empty:
+        print(f"\n{'='*50}")
+        print(f"{name} - Data Summary")
+        print(f"{'='*50}")
+        print(f"Shape: {df.shape}")
+        print(f"\nColumns: {df.columns.tolist()}")
+        print(f"\nFirst 5 rows:")
+        print(df.head())
+        print(f"\nData types:")
+        print(df.dtypes)
 
 def save_to_csv(df, filename):
     """Save dataframe to CSV file"""
-    if df is not None:
+    if df is not None and not df.empty:
         df.to_csv(filename, index=False)
-        print(f"Data saved to {filename}")
+        print(f"\n✓ Data saved to {filename}")
     else:
-        print("No data to save")
+        print(f"\n✗ No data to save for {filename}")
 
 if __name__ == "__main__":
-    # Test the extraction
-    print("=" * 50)
+    print("="*60)
     print("EIA DATA EXTRACTION PIPELINE")
-    print("=" * 50)
+    print("="*60)
     
-    # Extract crude oil data
-    oil_df = get_crude_oil_production(state="USA")
-    if oil_df is not None:
-        print(f"\nOil data preview:")
-        print(oil_df.head())
-        save_to_csv(oil_df, "crude_oil_production.csv")
-    
-    print("\n" + "=" * 50)
+    # Extract petroleum data
+    oil_df = get_petroleum_data()
+    explore_data(oil_df, "CRUDE OIL")
+    save_to_csv(oil_df, "crude_oil_production.csv")
     
     # Extract natural gas data
-    gas_df = get_natural_gas_production(state="USA")
-    if gas_df is not None:
-        print(f"\nGas data preview:")
-        print(gas_df.head())
-        save_to_csv(gas_df, "natural_gas_production.csv")
+    gas_df = get_natural_gas_data()
+    explore_data(gas_df, "NATURAL GAS")
+    save_to_csv(gas_df, "natural_gas_production.csv")
     
-    print("\n" + "=" * 50)
-    print("Extraction complete!")
+    print("\n" + "="*60)
+    print("EXTRACTION COMPLETE!")
+    print("="*60)
